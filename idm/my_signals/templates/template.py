@@ -1,8 +1,9 @@
 import re
+import time
 from typing import Tuple, Union
 
 from idm.utils import att_parse
-from idm.objects import MySignalEvent, dp
+from idm.objects import dp, SignalEvent
 
 
 def delete_template(name: str, templates: list) -> Tuple[list, bool]:
@@ -12,10 +13,9 @@ def delete_template(name: str, templates: list) -> Tuple[list, bool]:
             return templates, True
     return templates, False
 
-
+@dp.signal_event_register('+шаб')
 @dp.longpoll_event_register('+шаб')
-@dp.my_signal_event_register('+шаб')
-def template_create(event: MySignalEvent) -> str:
+def template_create(event: SignalEvent) -> str:
     name = re.findall(r"([^|]+)\|?([^|]*)", ' '.join(event.args))
     if not name:
         event.msg_op(2, "❗ Не указано название")
@@ -54,10 +54,9 @@ def template_create(event: MySignalEvent) -> str:
                  ("перезаписан" if exist else "сохранен"), delete=2)
     return "ok"
 
-
+@dp.signal_event_register('шабы')
 @dp.longpoll_event_register('шабы')
-@dp.my_signal_event_register('шабы')
-def template_list(event: MySignalEvent) -> str:
+def template_list(event: SignalEvent) -> str:
     category = ' '.join(event.args).lower()
     templates = event.db.templates
     if category == 'все':
@@ -85,14 +84,13 @@ def template_list(event: MySignalEvent) -> str:
     return "ok"
 
 
-def get_name(event: MySignalEvent) -> Union[str]:
+def get_name(event: SignalEvent) -> Union[str]:
     return event, ' '.join(event.args).lower()
 
-
+@dp.signal_event_register('-шаб')
 @dp.longpoll_event_register('-шаб')
-@dp.my_signal_event_register('-шаб')
 @dp.wrap_handler(get_name)
-def template_delete(event: MySignalEvent, name: str) -> str:
+def template_delete(event: SignalEvent, name: str) -> str:
     event.db.templates, exist = delete_template(name, event.db.templates)
     if exist:
         msg = f'✅ Шаблон "{name}" удален'
@@ -102,11 +100,10 @@ def template_delete(event: MySignalEvent, name: str) -> str:
     event.msg_op(2, msg, delete=1)
     return "ok"
 
-
+@dp.signal_event_register('шаб')
 @dp.longpoll_event_register('шаб')
-@dp.my_signal_event_register('шаб')
 @dp.wrap_handler(get_name)
-def template_show(event: MySignalEvent, name: str) -> str:
+def template_show(event: SignalEvent, name: str) -> str:
     template = None
     for temp in event.db.templates:
         if temp['name'] == name:
